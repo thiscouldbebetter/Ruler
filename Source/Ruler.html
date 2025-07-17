@@ -1,0 +1,513 @@
+<html>
+<body onload="UiEventHandler.body_Loaded();">
+
+<div id="divUi">
+
+	<h3>Ruler</h3>
+
+	<p>
+		Calibrate by choosing a reference measurement
+		and then adjusting the value in the Screen Resolution box
+		until the rendered image matches the dimensions
+		of the reference object.
+		Then use the ruler to make other length measurments.
+	</p>
+
+	<label for="inputScreenResolution">
+		Screen Resolution in DPI:
+	</label>
+	<input
+		id="inputScreenResolutionInPixelsPerInch"
+		type="number"
+		min="1"
+		max="400"
+		value="112.5"
+		onchange="UiEventHandler.inputScreenResolutionInPixelsPerInch_Changed(this);"
+	></input>
+
+	<div>
+		<label for="selectReferenceMeasurement">
+			Reference Measurement:
+		</label>
+		<select
+			id="selectReferenceMeasurement"
+			onchange="UiEventHandler.selectReferenceMeasurement_Changed(this);"
+		>
+			<option>[none selected]</option>
+		</select>
+		<br />
+		<div id="divReferenceMeasurementRendered" style="border: 1px solid">
+			[no reference measurement selected]
+		</div>
+	</div>
+
+	<div>
+		<label>Ruler:</label>
+		<div id="divRulerRendered">[none yet]</div>
+	</div>
+
+</div>
+
+<script type="text/javascript">
+
+// UI event handler.
+
+class UiEventHandler
+{
+	static body_Loaded()
+	{
+		var d = document;
+
+		var selectReferenceMeasurement =
+			d.getElementById("selectReferenceMeasurement");
+
+		var measurements = 
+			ReferenceMeasurement.Instances()._All;
+
+		for (var i = 0; i < measurements.length; i++)
+		{
+			var measurement = measurements[i];
+			var measurementAsOption =
+				d.createElement("option");
+			measurementAsOption.innerHTML =
+				measurement.name;
+
+			selectReferenceMeasurement
+				.appendChild(measurementAsOption);
+		}
+
+		DomHelper.renderInterface();
+	}
+
+	static inputScreenResolutionInPixelsPerInch_Changed()
+	{
+		DomHelper.renderInterface();
+	}
+
+	static selectReferenceMeasurement_Changed()
+	{
+		DomHelper.renderInterface();
+	}
+}
+
+// Classes.
+
+class DomHelper
+{
+	static canvasOfWidthAndHeightInPixelsCreate
+	(
+		widthInPixels, heightInPixels
+	)
+	{
+		var d = document;
+		var canvas = d.createElement("canvas");
+		canvas.width = widthInPixels;
+		canvas.height = heightInPixels;
+		return canvas;
+	}
+
+	static renderInterface()
+	{
+		var d = document;
+
+		var inputScreenResolutionInPixelsPerInch =
+			d.getElementById("inputScreenResolutionInPixelsPerInch");
+		var selectReferenceMeasurement =
+			d.getElementById("selectReferenceMeasurement");
+
+		var screenResolutionInPixelsPerInch =
+			parseFloat(inputScreenResolutionInPixelsPerInch.value);
+		var measurementName =
+			selectReferenceMeasurement.value;
+
+		var referenceMeasurement =
+			ReferenceMeasurement
+				.byName(measurementName);
+
+		if (referenceMeasurement != null)
+		{
+			var referenceMeasurementAsCanvas =
+				referenceMeasurement.toCanvas(screenResolutionInPixelsPerInch);
+			
+			var divReferenceMeasurementRendered =
+				d.getElementById("divReferenceMeasurementRendered");
+			divReferenceMeasurementRendered.innerHTML = "";
+			divReferenceMeasurementRendered
+				.appendChild(referenceMeasurementAsCanvas);
+		}
+
+		var ruler = new Ruler();
+		var rulerAsCanvas =
+			ruler.toCanvasWithPixelsPerInch(screenResolutionInPixelsPerInch);
+		var divRulerRendered = d.getElementById("divRulerRendered");
+		divRulerRendered.innerHTML = "";
+		divRulerRendered.appendChild(rulerAsCanvas);
+	}
+}
+
+class ReferenceMeasurement
+{
+	constructor
+	(
+		name, dimensionsAsString, toCanvas
+	)
+	{
+		this.name = name;
+		this.dimensionsAsString = dimensionsAsString;
+		this._toCanvas = toCanvas;
+	}
+
+	static Instances()
+	{
+		if (this._instances == null)
+		{
+			this._instances =
+				new ReferenceMeasurement_Instances();
+		}
+		return this._instances;
+	}
+
+	static byName(name)
+	{
+		return this.Instances().byName(name);
+	}
+
+	toCanvas(pixelsPerInch)
+	{
+		return this._toCanvas(pixelsPerInch);
+	}
+}
+
+class ReferenceMeasurement_Instances
+{
+	constructor()
+	{
+		var rm = (n, das, d) =>
+			new ReferenceMeasurement(n, das, d);
+
+		var drawTodo = (g) => {throw new Error("todo");}
+		var drawCircle = (pixelsPerInch, diameter) =>
+			this.canvasCreateWithPixelsPerInchAndCircleOfDiameter
+			(
+				pixelsPerInch, diameter
+			);
+		var drawRectangle = (pixelsPerInch, width, height) =>
+			this.canvasCreateWithPixelsPerInchAndRectangleOfWidthAndHeight
+			(
+				pixelsPerInch, width, height
+			);
+
+		this.CdOrDvd =
+			rm
+			(
+				"CD/DVD",
+				"diameter 4.7 inches",
+				ppi => drawCircle(ppi, 4.7)
+			);
+
+		this.CreditCard =
+			rm
+			(
+				"credit card",
+				"3.375 x 2.125 inches",
+				ppi => drawRectangle(ppi, 3.375, 2.125)
+			);
+
+		this.PaperSizeLetterFoldedEachWay =
+			rm
+			(
+				"paper, US letter size, folded each way",
+				"4.25 x 5.5 inches",
+				ppi => drawRectangle(ppi, 4.25, 5.5)
+			);
+
+		this.UsCoinDime =
+			rm
+			(
+				"US coin, dime",
+				"diameter 0.705 inches",
+				ppi => drawCircle(ppi, 0.705)
+			);
+
+		this.UsCoinNickel =
+			rm
+			(
+				"US coin, nickel",
+				"diameter 0.835 inches",
+				ppi => drawCircle(ppi, 0.835)
+			);
+
+		this.UsCoinPenny =
+			rm
+			(
+				"US coin, penny",
+				"diameter 0.75 inches",
+				ppi => drawCircle(ppi, 0.75)
+			);
+
+		this.UsCoinQuarter =
+			rm
+			(
+				"US coin, quarter",
+				"diameter 0.955 inches",
+				ppi => drawCircle(ppi, 0.955)
+			);
+
+		this.UsDollarBill =
+			rm
+			(
+				"US dollar bill",
+				"6.14 x 2.61 inches",
+				ppi => drawRectangle(ppi, 6.14, 2.61)
+			);
+
+		this._All =
+		[
+			this.CdOrDvd,
+			this.CreditCard,
+			this.PaperSizeLetterFoldedEachWay,
+			this.UsCoinDime,
+			this.UsCoinNickel,
+			this.UsCoinPenny,
+			this.UsCoinQuarter,
+			this.UsDollarBill
+		];
+	}
+
+	byName(name)
+	{
+		return this._All.find(x => x.name == name);
+	}
+
+	// Draw methods.
+
+	canvasCreateWithPixelsPerInchAndCircleOfDiameter
+	(
+		pixelsPerInch, diameterInInches
+	)
+	{
+		var diameterInPixels =
+			diameterInInches * pixelsPerInch;
+
+		var radiusInPixels = diameterInPixels / 2;
+
+		var strokeWidth = 1;
+		var strokeWidthDouble = strokeWidth * 2;
+
+		var canvas = DomHelper.canvasOfWidthAndHeightInPixelsCreate
+		(
+			diameterInPixels + strokeWidthDouble,
+			diameterInPixels + strokeWidthDouble
+		);
+
+		var g = canvas.getContext("2d");
+		g.strokeStyle = "Black";
+		g.lineWidth = strokeWidth;
+		g.beginPath();
+		g.arc
+		(
+			radiusInPixels, radiusInPixels, // center
+			radiusInPixels, // radius
+			0, Math.PI * 2 // start and stop angles
+		);
+		g.closePath();
+		g.stroke();
+
+		return canvas;
+	}
+
+	canvasCreateWithPixelsPerInchAndRectangleOfWidthAndHeight
+	(
+		pixelsPerInch,
+		widthInInches,
+		heightInInches
+	)
+	{
+		var widthInPixels = widthInInches * pixelsPerInch;
+		var heightInPixels = heightInInches * pixelsPerInch;
+
+		var strokeWidth = 1;
+		var strokeWidthDouble = strokeWidth * 2;
+
+		var canvas =
+			DomHelper.canvasOfWidthAndHeightInPixelsCreate
+			(
+				widthInPixels + strokeWidthDouble,
+				heightInPixels + strokeWidthDouble
+			);
+
+		var g = canvas.getContext("2d");
+		g.lineWidth = strokeWidth;
+		g.strokeStyle = "Black";
+		g.strokeRect(0, 0, widthInPixels, heightInPixels);
+
+		return canvas;
+	}
+}
+
+class Ruler
+{
+	toCanvasWithPixelsPerInch(pixelsPerInch)
+	{
+		var widthMinusMarginsInInches = 12;
+		var heightInInches = 1;
+
+		var marginInPixels = 10;
+		var marginInPixelsDouble = marginInPixels * 2;
+
+		var widthWithMarginsInPixels =
+			marginInPixelsDouble
+			+ widthMinusMarginsInInches * pixelsPerInch;
+		var heightInPixels = heightInInches * pixelsPerInch;
+
+		var strokeWidth = 1;
+		var strokeWidthDouble = strokeWidth * 2;
+
+		var canvas =
+			DomHelper.canvasOfWidthAndHeightInPixelsCreate
+			(
+				widthWithMarginsInPixels,
+				heightInPixels
+			);
+
+		var g = canvas.getContext("2d");
+		g.lineWidth = strokeWidth;
+		g.strokeStyle = "Black";
+		g.strokeRect
+		(
+			0, 0,
+			widthWithMarginsInPixels - strokeWidth,
+			heightInPixels - strokeWidth
+		);
+
+		var widthInSixteenthInches =
+			widthMinusMarginsInInches * 16;
+
+		var markLengthInPixelsMax = heightInPixels / 3;
+
+		for (var x = 0; x <= widthInSixteenthInches; x++)
+		{
+			var markOffsetInPixels = x * pixelsPerInch / 16;
+
+			var markPosInPixels =
+				marginInPixels + markOffsetInPixels;
+
+			var markLengthInPixels =
+				x % 16 == 0
+				? markLengthInPixelsMax
+				: x % 8 == 0
+				? markLengthInPixelsMax / 2
+				: x % 4 == 0
+				? markLengthInPixelsMax / 3
+				: x % 2 == 0
+				? markLengthInPixelsMax / 4
+				: markLengthInPixelsMax / 5;
+
+			var markLabel =
+				(x % 16 == 0)
+				? "" + (x / 16)
+				: null;
+
+			this.toCanvasWithPixelsPerInch_DrawMarkToContextWithLengthAndLabelAtPos
+			(
+				g,
+				markLengthInPixels,
+				markLabel,
+				markPosInPixels,
+				0, // markPosStartY
+				1 // markDirectionY
+			);
+		}
+
+		var centimetersPerInch = 2.54;
+		var widthInCentimeters =
+			widthMinusMarginsInInches * centimetersPerInch;
+		var millimetersPerCentimeter = 10;
+		var widthInMillimeters =
+			widthInCentimeters * millimetersPerCentimeter;
+		var pixelsPerMillimeter =
+			pixelsPerInch
+			/ (centimetersPerInch * millimetersPerCentimeter);
+
+		for (var x = 0; x <= widthInMillimeters; x++)
+		{
+			var markOffsetInPixels = x * pixelsPerMillimeter;
+
+			var markPosInPixels =
+				marginInPixels + markOffsetInPixels;
+
+			var markLengthInPixels =
+				x % 10 == 0
+				? markLengthInPixelsMax / 2
+				: x % 5 == 0
+				? markLengthInPixelsMax / 3
+				: markLengthInPixelsMax / 4;
+
+			var markLabel =
+				(x % 10 == 0)
+				? "" + (x / 10)
+				: null;
+
+			this.toCanvasWithPixelsPerInch_DrawMarkToContextWithLengthAndLabelAtPos
+			(
+				g,
+				markLengthInPixels,
+				markLabel,
+				markPosInPixels,
+				heightInPixels, // markPosStartY
+				-1 // markDirectionY
+			);
+		}
+
+		return canvas;
+	}
+
+	toCanvasWithPixelsPerInch_DrawMarkToContextWithLengthAndLabelAtPos
+	(
+		graphicsContext,
+		markLengthInPixels,
+		markLabel,
+		markPosInPixelsX,
+		markPosStartY,
+		markDirectionY
+	)
+	{
+		var g = graphicsContext;
+
+		var markPosEndY =
+			markPosStartY + markDirectionY * markLengthInPixels
+
+		g.beginPath();
+		g.moveTo(markPosInPixelsX, markPosStartY);
+		g.lineTo(markPosInPixelsX, markPosEndY);
+		g.stroke();
+
+		if (markLabel != null)
+		{
+			var textWidthHalf =
+				g.measureText(markLabel).width / 2;
+
+			var textPosInPixelsX =
+				markPosInPixelsX
+				- textWidthHalf;
+
+			var fontHeightInPixels = 8;
+
+			var textPosInPixelsY =
+				markPosEndY
+				+ markDirectionY * fontHeightInPixels;
+
+			g.fillText
+			(
+				markLabel,
+				textPosInPixelsX,
+				textPosInPixelsY
+			);
+		}
+	}
+}
+
+</script>
+
+</body>
+</html>
