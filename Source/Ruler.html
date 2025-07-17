@@ -94,6 +94,9 @@ class UiEventHandler
 
 class DomHelper
 {
+	static colorBackground = "White";
+	static colorForeground = "Black";
+
 	static canvasOfWidthAndHeightInPixelsCreate
 	(
 		widthInPixels, heightInPixels
@@ -294,14 +297,21 @@ class ReferenceMeasurement_Instances
 		var strokeWidth = 1;
 		var strokeWidthDouble = strokeWidth * 2;
 
+		var canvasWidth = diameterInPixels + strokeWidthDouble;
+		var canvasHeight = diameterInPixels + strokeWidthDouble;
+
 		var canvas = DomHelper.canvasOfWidthAndHeightInPixelsCreate
 		(
-			diameterInPixels + strokeWidthDouble,
-			diameterInPixels + strokeWidthDouble
+			canvasWidth,
+			canvasHeight
 		);
 
 		var g = canvas.getContext("2d");
-		g.strokeStyle = "Black";
+
+		g.fillStyle = DomHelper.colorBackground;
+		g.fillRect(0, 0, canvasWidth, canvasHeight);
+
+		g.strokeStyle = DomHelper.colorForeground;
 		g.lineWidth = strokeWidth;
 		g.beginPath();
 		g.arc
@@ -337,8 +347,12 @@ class ReferenceMeasurement_Instances
 			);
 
 		var g = canvas.getContext("2d");
+
+		g.fillStyle = DomHelper.colorBackground;
+		g.fillRect(0, 0, widthInPixels, heightInPixels);
+
 		g.lineWidth = strokeWidth;
-		g.strokeStyle = "Black";
+		g.strokeStyle = DomHelper.colorForeground;
 		g.strokeRect(0, 0, widthInPixels, heightInPixels);
 
 		return canvas;
@@ -371,8 +385,12 @@ class Ruler
 			);
 
 		var g = canvas.getContext("2d");
+
+		g.fillStyle = DomHelper.colorBackground;
+		g.fillRect(0, 0, widthWithMarginsInPixels, heightInPixels);;
+
 		g.lineWidth = strokeWidth;
-		g.strokeStyle = "Black";
+		g.strokeStyle = DomHelper.colorForeground;
 		g.strokeRect
 		(
 			0, 0,
@@ -497,6 +515,7 @@ class Ruler
 				markPosEndY
 				+ markDirectionY * fontHeightInPixels;
 
+			g.fillStyle = DomHelper.colorForeground;
 			g.fillText
 			(
 				markLabel,
